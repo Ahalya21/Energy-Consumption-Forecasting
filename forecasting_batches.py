@@ -233,21 +233,15 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from prophet import Prophet
 
-# ============================================================
 # UTILITY FUNCTION
-# ============================================================
 def to_2d_array(x):
     return np.asarray(x).reshape(-1, 1)
 
-# ============================================================
 # LOAD DATA
-# ============================================================
 house_raw = pd.read_csv("household_power_consumption.csv")
 city_raw = pd.read_csv("C:/Users/Sasi Ahalya Nair/Downloads/archive (3)/PJM_Load_hourly.csv")
 
-# ============================================================
 # HOUSEHOLD PREPROCESSING
-# ============================================================
 house_raw.replace("?", np.nan, inplace=True)
 
 house_raw["Datetime"] = pd.to_datetime(
@@ -272,9 +266,7 @@ house = house.loc[house.index >= cutoff].copy()
 
 house["Energy"] = house["Energy"].astype("float32")
 
-# ============================================================
 # HOUSEHOLD MODEL (SARIMA)
-# ============================================================
 print("\n===== HOUSEHOLD (SARIMA) =====")
 
 house_series = house["Energy"]
@@ -324,9 +316,7 @@ rmse = np.sqrt(mean_squared_error(house_actual, yhat))
 print(f"\nHousehold MAE: {mae:.4f}")
 print(f"Household RMSE: {rmse:.4f}")
 
-# ============================================================
 # HOUSEHOLD FUTURE
-# ============================================================
 # Use SAME scaler (no refitting)
 full_scaled = scaler_h.transform(to_2d_array(house_series)).flatten()
 full_scaled = pd.Series(full_scaled, index=house_series.index)
@@ -351,17 +341,13 @@ print("\n--- Household Future Predictions (next 10 hours) ---")
 for i in range(min(10, len(future_pred))):
     print(f"Hour {i+1}: {future_pred[i]:.3f}")
 
-# ============================================================
 # CITY PREPROCESSING
-# ============================================================
 city = city_raw.copy()
 city["Datetime"] = pd.to_datetime(city.iloc[:, 0], errors="coerce")
 city["Energy"] = pd.to_numeric(city.iloc[:, 1], errors="coerce")
 city = city[["Datetime", "Energy"]].dropna().sort_values("Datetime").reset_index(drop=True)
 
-# ============================================================
 # CITY MODEL (PROPHET)
-# ============================================================
 print("\n===== CITY (PROPHET) =====")
 
 batch_size = 5000
@@ -427,9 +413,7 @@ for batch_num in range(num_batches):
     print(f"\nCity MAE: {mae_c:.4f}")
     print(f"City RMSE: {rmse_c:.4f}")
 
-    # ========================================================
     # FUTURE FORECAST (USE SAME SCALER)
-    # ========================================================
     city_full = city_prophet.copy()
     city_full["y"] = scaler_c.transform(city_full[["y"]])
 
@@ -453,3 +437,45 @@ for batch_num in range(num_batches):
     print("\n--- City Future Predictions (next 10 hours) ---")
     for i in range(min(10, len(future_city))):
         print(f"Hour {i+1}: {future_city[i]:.3f}")
+
+
+
+house_results = pd.DataFrame({
+    "Datetime": house_test.index,
+    "Actual": house_actual,
+    "Predicted": yhat
+})
+
+house_results.to_csv("household_predictions.csv", index=False)
+
+#future forecast
+future_dates = pd.date_range(
+    start=house_series.index[-1] + pd.Timedelta(hours=1),
+    periods=168,
+    freq="h"
+)
+
+house_future_df = pd.DataFrame({
+    "Datetime": future_dates,
+    "Forecast": future_pred
+})
+
+house_future_df.to_csv("household_future.csv", index=False)
+
+
+#for city
+city_results = pd.DataFrame({
+    "Datetime": forecast_test["ds"],
+    "Actual": city_actual,
+    "Predicted": yhat_city
+})
+
+city_results.to_csv(f"city_batch_{batch_num+1}.csv", index=False)
+
+#future forecast
+city_future_df = pd.DataFrame({
+    "Datetime": forecast_future["ds"],
+    "Forecast": future_city
+})
+
+city_future_df.to_csv(f"city_future_{batch_num+1}.csv", index=False)
