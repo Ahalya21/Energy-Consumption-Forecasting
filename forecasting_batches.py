@@ -464,18 +464,113 @@ house_future_df.to_csv("household_future.csv", index=False)
 
 
 #for city
+
+
+all_city_results = []
+all_city_future = []
+
+
 city_results = pd.DataFrame({
     "Datetime": forecast_test["ds"],
     "Actual": city_actual,
-    "Predicted": yhat_city
+    "Predicted": yhat_city,
+    "Batch": batch_num + 1
 })
 
-city_results.to_csv(f"city_batch_{batch_num+1}.csv", index=False)
+all_city_results.append(city_results)
 
 #future forecast
 city_future_df = pd.DataFrame({
     "Datetime": forecast_future["ds"],
-    "Forecast": future_city
+    "Forecast": future_city,
+    "Batch": batch_num + 1
 })
 
-city_future_df.to_csv(f"city_future_{batch_num+1}.csv", index=False)
+all_city_future.append(city_future_df)
+
+final_city_results = pd.concat(all_city_results, ignore_index=True)
+final_city_future = pd.concat(all_city_future, ignore_index=True)
+
+final_city_results.to_csv("city_all_predictions.csv", index=False)
+final_city_future.to_csv("city_all_future.csv", index=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
